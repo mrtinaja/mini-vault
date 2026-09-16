@@ -49,45 +49,25 @@ function camposCopiables(item) {
   return [];
 }
 
-function copiarConFallback(texto) {
-  const textarea = document.createElement("textarea");
-  textarea.value = texto;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.focus();
-  textarea.select();
-  const ok = document.execCommand("copy");
-  document.body.removeChild(textarea);
-  if (!ok) throw new Error("execCommand copy falló");
-}
-
 async function copiarAlPortapapeles(texto, boton) {
-  if (!texto) return;
+  const status = document.getElementById("copy-status");
+  if (!texto) { status.textContent = "El campo está vacío."; return; }
   try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(texto);
-    } else {
-      copiarConFallback(texto);
-    }
-  } catch (err) {
-    try {
-      copiarConFallback(texto);
-    } catch (err2) {
-      console.error("No se pudo copiar:", err2);
-      return;
-    }
+    await invoke("copiar_texto", { texto });
+  } catch {
+    status.textContent = "No se pudo copiar. Intentá nuevamente.";
+    return;
   }
-
-  const iconoEl = boton.querySelector("i");
-  const iconoOriginal = iconoEl.className;
+  status.textContent = "Copiado. El portapapeles se limpia en 1 minuto.";
   boton.classList.add("copiado");
-  iconoEl.className = "ti ti-check";
+  const etiqueta = boton.querySelector("span");
+  if (!boton.dataset.etiqueta) boton.dataset.etiqueta = etiqueta.textContent;
+  etiqueta.textContent = "Copiado";
   clearTimeout(boton._copiadoTimeout);
   boton._copiadoTimeout = setTimeout(() => {
     boton.classList.remove("copiado");
-    iconoEl.className = iconoOriginal;
-  }, 1200);
+    etiqueta.textContent = boton.dataset.etiqueta;
+  }, 1600);
 }
 
 function itemsFiltrados() {
@@ -118,7 +98,7 @@ function renderLista() {
       .map(
         (c) => `
       <button type="button" class="item-copiar" data-campo="${c.campo}" title="Copiar ${c.label}" aria-label="Copiar ${c.label}">
-        <i class="ti ${c.icono}" aria-hidden="true"></i>
+        <i class="ti ${c.icono}" aria-hidden="true"></i><span>Copiar ${c.label}</span>
       </button>`
       )
       .join("");
@@ -173,7 +153,7 @@ function abrirModal(id) {
     document.getElementById("modal-titulo").textContent = TIPOS[item.tipo].label;
     mostrarCampos(item.tipo);
     for (const [clave, valor] of Object.entries(item)) {
-      const campo = form.querySelector(`[name="${clave}"]`);
+      const campo = document.getElementById(TIPOS[item.tipo].campos).querySelector(`[name="${clave}"]`);
       if (campo) campo.value = valor;
     }
     btnEliminar.hidden = false;

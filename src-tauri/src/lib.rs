@@ -1,4 +1,6 @@
 use std::fs;
+use arboard::Clipboard;
+use std::{thread, time::Duration};
 use tauri::Manager;
 
 fn ruta_datos(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
@@ -38,11 +40,26 @@ fn guardar_items(app: tauri::AppHandle, contenido: String) -> Result<(), String>
     fs::write(&ruta, contenido).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn copiar_texto(texto: String) -> Result<(), String> {
+    let mut clipboard = Clipboard::new().map_err(|e| e.to_string())?;
+    clipboard.set_text(texto.clone()).map_err(|e| e.to_string())?;
+    thread::spawn(move || {
+        thread::sleep(Duration::from_secs(60));
+        if let Ok(mut clipboard) = Clipboard::new() {
+            if clipboard.get_text().ok().as_deref() == Some(texto.as_str()) {
+                let _ = clipboard.set_text("");
+            }
+        }
+    });
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![cargar_items, guardar_items, ruta_datos_debug])
+        .invoke_handler(tauri::generate_handler![cargar_items, guardar_items, ruta_datos_debug, copiar_texto])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
