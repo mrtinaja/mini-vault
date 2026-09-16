@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="encabezado">
+        <div>
+          <p class="eyebrow">Mini Vault</p>
+          <p id="contador" class="contador"></p>
+        </div>
+        <div class="icono-lock">
+          <i class="ti ti-lock" aria-hidden="true"></i>
+        </div>
+      </header>
+
+      <div class="buscador">
+        <i class="ti ti-search" aria-hidden="true"></i>
+        <input id="buscar-input" type="text" placeholder="Buscar item..." autocomplete="off" />
+      </div>
+
+      <div id="filtros" class="filtros">
+        <button type="button" class="filtro activo" data-tipo="todos">Todos</button>
+        <button type="button" class="filtro" data-tipo="password">Contraseñas</button>
+        <button type="button" class="filtro" data-tipo="nota">Notas</button>
+        <button type="button" class="filtro" data-tipo="vpn">VPN</button>
+      </div>
+
+      <div id="lista" class="lista"></div>
+      <p id="vacio" class="vacio" hidden>No hay items todavía. Agregá el primero.</p>
+
+      <div class="fila-botones">
+        <button id="btn-nuevo" type="button" class="btn-nuevo">
+          <i class="ti ti-plus" aria-hidden="true"></i>
+          Nuevo item
+        </button>
+        <button id="btn-importar" type="button" class="btn-importar" aria-label="Importar JSON">
+          <i class="ti ti-file-import" aria-hidden="true"></i>
+        </button>
+      </div>
+    </main>
+
+    <div id="overlay-importar" class="overlay" hidden>
+      <div class="modal">
+        <div class="modal-header">
+          <p class="modal-titulo">Importar items</p>
+          <button id="btn-cerrar-importar" type="button" class="btn-icono" aria-label="Cerrar">
+            <i class="ti ti-x" aria-hidden="true"></i>
+          </button>
+        </div>
+        <p class="importar-ayuda">Pegá el JSON con los items y se agregan a la lista actual.</p>
+        <textarea id="importar-textarea" class="importar-textarea" rows="10" placeholder='[{"tipo":"vpn","titulo":"...","servidor":"...","usuario":"...","password":"..."}]'></textarea>
+        <p id="importar-error" class="form-error" hidden></p>
+        <div class="modal-acciones">
+          <button id="btn-importar-confirmar" type="button" class="btn-primario">Importar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="overlay" class="overlay" hidden>
+      <div class="modal">
+        <div class="modal-header">
+          <p id="modal-titulo" class="modal-titulo">Nuevo item</p>
+          <button id="btn-cerrar" type="button" class="btn-icono" aria-label="Cerrar">
+            <i class="ti ti-x" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="tipo-selector">
+          <button type="button" class="tipo-opcion activo" data-tipo="password">
+            <i class="ti ti-key" aria-hidden="true"></i> Contraseña
+          </button>
+          <button type="button" class="tipo-opcion" data-tipo="nota">
+            <i class="ti ti-notes" aria-hidden="true"></i> Nota
+          </button>
+          <button type="button" class="tipo-opcion" data-tipo="vpn">
+            <i class="ti ti-shield-lock" aria-hidden="true"></i> VPN
+          </button>
+        </div>
+
+        <form id="form-item" class="form-item">
+          <div id="campos-password" class="campos">
+            <label>Sitio / servicio
+              <div class="campo-wrap">
+                <input name="titulo" type="text" placeholder="GitHub" />
+                <button type="button" class="campo-copiar" aria-label="Copiar sitio / servicio" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+            <label>Usuario
+              <div class="campo-wrap">
+                <input name="usuario" type="text" placeholder="usuario" />
+                <button type="button" class="campo-copiar" aria-label="Copiar usuario" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+            <label>Contraseña
+              <div class="campo-wrap">
+                <input name="password" type="text" placeholder="••••••••" />
+                <button type="button" class="campo-copiar" aria-label="Copiar contraseña" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+          </div>
+
+          <div id="campos-nota" class="campos" hidden>
+            <label>Título
+              <div class="campo-wrap">
+                <input name="titulo" type="text" placeholder="Frase semilla wallet" />
+                <button type="button" class="campo-copiar" aria-label="Copiar título" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+            <label>Contenido
+              <div class="campo-wrap campo-wrap-textarea">
+                <textarea name="contenido" rows="4" placeholder="Escribí la nota..."></textarea>
+                <button type="button" class="campo-copiar" aria-label="Copiar contenido" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+          </div>
+
+          <div id="campos-vpn" class="campos" hidden>
+            <label>Nombre del servicio
+              <div class="campo-wrap">
+                <input name="titulo" type="text" placeholder="NordVPN" />
+                <button type="button" class="campo-copiar" aria-label="Copiar nombre del servicio" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+            <label>Servidor
+              <div class="campo-wrap">
+                <input name="servidor" type="text" placeholder="ar-bue.nordvpn.com" />
+                <button type="button" class="campo-copiar" aria-label="Copiar servidor" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+            <label>Usuario
+              <div class="campo-wrap">
+                <input name="usuario" type="text" placeholder="usuario" />
+                <button type="button" class="campo-copiar" aria-label="Copiar usuario" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+            <label>Contraseña
+              <div class="campo-wrap">
+                <input name="password" type="text" placeholder="••••••••" />
+                <button type="button" class="campo-copiar" aria-label="Copiar contraseña" title="Copiar"><i class="ti ti-copy" aria-hidden="true"></i></button>
+              </div>
+            </label>
+          </div>
+
+          <p id="form-error" class="form-error" hidden></p>
+
+          <div class="modal-acciones">
+            <button id="btn-eliminar" type="button" class="btn-secundario btn-peligro" hidden>
+              <i class="ti ti-trash" aria-hidden="true"></i> Eliminar
+            </button>
+            <button type="submit" class="btn-primario">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
