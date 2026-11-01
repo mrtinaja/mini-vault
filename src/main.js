@@ -11,6 +11,9 @@ let filtroActivo = "todos";
 let terminoBusqueda = "";
 let tipoSeleccionado = "password";
 let idEditando = null;
+let idEliminar = null;
+let eliminando = false;
+let focoEliminar = null;
 
 function idNuevo() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -21,8 +24,12 @@ async function cargarItems() {
   items = JSON.parse(contenido);
 }
 
-async function guardarEnDisco() {
-  await invoke("guardar_items", { contenido: JSON.stringify(items) });
+async function guardarEnDisco(contenido = items) {
+  await invoke("guardar_items", { contenido: JSON.stringify(contenido) });
+}
+
+function escaparHtml(valor) {
+  return String(valor ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c]));
 }
 
 function subtitulo(item) {
@@ -84,10 +91,11 @@ function renderLista() {
   const vacioEl = document.getElementById("vacio");
   const visibles = itemsFiltrados();
 
-  document.getElementById("contador").textContent = `${items.length} item${items.length === 1 ? "" : "s"} guardado${items.length === 1 ? "" : "s"}`;
+  document.getElementById("contador").textContent = `${items.length} elemento${items.length === 1 ? "" : "s"} guardado${items.length === 1 ? "" : "s"}`;
 
   listaEl.innerHTML = "";
   vacioEl.hidden = visibles.length > 0;
+  vacioEl.textContent = items.length ? "No hay resultados. Probá con otro título o filtro." : "Tu bóveda está vacía. Agregá tu primer elemento.";
 
   for (const item of visibles) {
     const fila = document.createElement("div");
@@ -104,17 +112,20 @@ function renderLista() {
       .join("");
 
     fila.innerHTML = `
-      <button type="button" class="item-clic">
+      <div class="item-heading"><button type="button" class="item-clic">
         <div class="item-icono ${item.tipo}"><i class="ti ${TIPOS[item.tipo].icono}" aria-hidden="true"></i></div>
         <div class="item-info">
-          <p class="item-titulo">${item.titulo || "(sin título)"}</p>
-          <p class="item-sub">${subtitulo(item)}</p>
+          <p class="item-titulo">${escaparHtml(item.titulo || "(sin título)")}</p>
+          <p class="item-sub">${escaparHtml(subtitulo(item))}</p>
         </div>
-      </button>
-      ${botonesCopia ? `<div class="item-acciones">${botonesCopia}</div>` : ""}
+      </button><button type="button" class="item-editar" title="Editar"><i class="ti ti-pencil" aria-hidden="true"></i></button></div>
+      <div class="item-acciones">${botonesCopia}<button type="button" class="item-eliminar"><i class="ti ti-trash" aria-hidden="true"></i><span>Eliminar</span></button></div>
     `;
 
     fila.querySelector(".item-clic").addEventListener("click", () => abrirModal(item.id));
+    const editar = fila.querySelector(".item-editar");
+    editar.setAttribute("aria-label", "Editar " + (item.titulo || "elemento sin título"));
+    editar.addEventListener("click", () => abrirModal(item.id));
     fila.querySelectorAll(".item-copiar").forEach((btn) => {
       btn.addEventListener("click", (ev) => {
         ev.stopPropagation();
@@ -122,6 +133,9 @@ function renderLista() {
       });
     });
 
+    const eliminar = fila.querySelector(".item-eliminar");
+    eliminar.setAttribute("aria-label", "Eliminar " + (item.titulo || "elemento sin título"));
+    eliminar.addEventListener("click", () => solicitarEliminar(item.id));
     listaEl.appendChild(fila);
   }
 }
@@ -158,7 +172,7 @@ function abrirModal(id) {
     }
     btnEliminar.hidden = false;
   } else {
-    document.getElementById("modal-titulo").textContent = "Nuevo item";
+    document.getElementById("modal-titulo").textContent = "Nuevo elemento";
     mostrarCampos("password");
     btnEliminar.hidden = true;
   }
@@ -183,6 +197,7 @@ function datosFormulario() {
 
 async function guardarItem(ev) {
   ev.preventDefault();
+  if (eliminando) return;
   const errorEl = document.getElementById("form-error");
   const datos = datosFormulario();
 
@@ -204,11 +219,43 @@ async function guardarItem(ev) {
   cerrarModal();
 }
 
+function solicitarEliminar(id = idEditando) {
+  if (eliminando) return;
+  const item = items.find((i) => i.id === id);
+  if (!item) return;
+  idEliminar = id;
+  focoEliminar = document.activeElement;
+  document.getElementById("eliminar-nombre").textContent = item.titulo || "el elemento sin título";
+  document.getElementById("eliminar-error").hidden = true;
+  document.getElementById("confirmar-eliminar").showModal();
+}
+
 async function eliminarItem() {
-  items = items.filter((i) => i.id !== idEditando);
-  await guardarEnDisco();
-  renderLista();
-  cerrarModal();
+  if (eliminando || idEliminar === null) return;
+  const id = idEliminar;
+  const restantes = items.filter((i) => i.id !== id);
+  if (restantes.length === items.length) return;
+  eliminando = true;
+  const confirmar = document.getElementById("btn-confirmar-eliminar");
+  const cancelar = document.getElementById("btn-cancelar-eliminar");
+  confirmar.disabled = cancelar.disabled = true;
+  confirmar.textContent = "Eliminando…";
+  try {
+    await guardarEnDisco(restantes);
+    items = restantes;
+    if (idEditando === id) cerrarModal();
+    renderLista();
+    document.getElementById("confirmar-eliminar").close();
+    document.getElementById("copy-status").textContent = "Elemento eliminado.";
+  } catch {
+    const error = document.getElementById("eliminar-error");
+    error.textContent = "No se pudo eliminar. Tus datos se conservaron. Intentá de nuevo.";
+    error.hidden = false;
+  } finally {
+    eliminando = false;
+    confirmar.disabled = cancelar.disabled = false;
+    confirmar.textContent = "Sí, eliminar";
+  }
 }
 
 function abrirImportar() {
@@ -222,6 +269,7 @@ function cerrarImportar() {
 }
 
 async function importarItems() {
+  if (eliminando) return;
   const errorEl = document.getElementById("importar-error");
   const texto = document.getElementById("importar-textarea").value.trim();
   errorEl.hidden = true;
@@ -265,7 +313,16 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (ev.target.id === "overlay") cerrarModal();
   });
   document.getElementById("form-item").addEventListener("submit", guardarItem);
-  document.getElementById("btn-eliminar").addEventListener("click", eliminarItem);
+  document.getElementById("btn-eliminar").addEventListener("click", () => solicitarEliminar());
+  const confirmacion = document.getElementById("confirmar-eliminar");
+  document.getElementById("btn-confirmar-eliminar").addEventListener("click", eliminarItem);
+  document.getElementById("btn-cancelar-eliminar").addEventListener("click", () => { if (!eliminando) confirmacion.close(); });
+  confirmacion.addEventListener("cancel", (ev) => { if (eliminando) ev.preventDefault(); });
+  confirmacion.addEventListener("close", () => {
+    idEliminar = null;
+    if (focoEliminar?.isConnected && !focoEliminar.closest("[hidden]")) focoEliminar.focus();
+    else document.getElementById("btn-nuevo").focus();
+  });
 
   document.getElementById("form-item").addEventListener("click", (ev) => {
     const boton = ev.target.closest(".campo-copiar");

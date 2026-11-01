@@ -2,18 +2,17 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#101114" />
     <title>Mini Vault</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="app">
       <header class="encabezado">
         <div>
-          <p class="eyebrow">Mini Vault</p>
+          <p class="eyebrow">MINI VAULT</p>
+          <h1>Tu bóveda<span class="acento">.</span></h1>
           <p id="contador" class="contador"></p>
         </div>
         <div class="icono-lock">
@@ -23,7 +22,7 @@
 
       <div class="buscador">
         <i class="ti ti-search" aria-hidden="true"></i>
-        <input id="buscar-input" type="text" placeholder="Buscar item..." autocomplete="off" />
+        <input id="buscar-input" type="text" aria-label="Buscar por título" placeholder="Buscar en tu bóveda" autocomplete="off" />
       </div>
 
       <div id="filtros" class="filtros">
@@ -33,25 +32,27 @@
         <button type="button" class="filtro" data-tipo="vpn">VPN</button>
       </div>
 
+      <div class="seccion-titulo"><h2>Guardados</h2><span>Todo a mano</span></div>
       <div id="lista" class="lista"></div>
-      <p id="vacio" class="vacio" hidden>No hay items todavía. Agregá el primero.</p>
+      <p id="vacio" class="vacio" hidden>Tu bóveda está vacía. Agregá tu primer elemento.</p>
 
       <div class="fila-botones">
         <button id="btn-nuevo" type="button" class="btn-nuevo">
           <i class="ti ti-plus" aria-hidden="true"></i>
-          Nuevo item
+          Nuevo
         </button>
-        <button id="btn-importar" type="button" class="btn-importar" aria-label="Importar JSON">
-          <i class="ti ti-file-import" aria-hidden="true"></i>
+        <button id="btn-importar" type="button" class="btn-importar" aria-label="Importar elementos">
+          <i class="ti ti-file-import" aria-hidden="true"></i><span>Importar</span>
         </button>
       </div>
-    <p id="copy-status" role="status" aria-live="polite">Al copiar, el portapapeles se limpia en 1 minuto.</p>
+    <p id="copy-status" role="status" aria-live="polite">Copiá al instante. El portapapeles se limpia en 1 min.</p>
     </main>
 
     <div id="overlay-importar" class="overlay" hidden>
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="importar-titulo">
+        <div class="sheet-handle" aria-hidden="true"></div>
         <div class="modal-header">
-          <p class="modal-titulo">Importar items</p>
+          <p id="importar-titulo" class="modal-titulo">Importar elementos</p>
           <button id="btn-cerrar-importar" type="button" class="btn-icono" aria-label="Cerrar">
             <i class="ti ti-x" aria-hidden="true"></i>
           </button>
@@ -66,7 +67,8 @@
     </div>
 
     <div id="overlay" class="overlay" hidden>
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+        <div class="sheet-handle" aria-hidden="true"></div>
         <div class="modal-header">
           <p id="modal-titulo" class="modal-titulo">Nuevo item</p>
           <button id="btn-cerrar" type="button" class="btn-icono" aria-label="Cerrar">
@@ -162,6 +164,16 @@
       </div>
     </div>
 
+    <dialog id="confirmar-eliminar" aria-labelledby="eliminar-titulo" aria-describedby="eliminar-descripcion">
+      <div class="delete-mark" aria-hidden="true"><i class="ti ti-trash"></i></div>
+      <h2 id="eliminar-titulo">¿Eliminar elemento?</h2>
+      <p id="eliminar-descripcion">Se eliminará <strong id="eliminar-nombre"></strong> de tu bóveda. Esta acción no se puede deshacer.</p>
+      <p id="eliminar-error" class="form-error" role="alert" hidden></p>
+      <div class="modal-acciones">
+        <button id="btn-cancelar-eliminar" type="button" class="btn-secundario" autofocus>Cancelar</button>
+        <button id="btn-confirmar-eliminar" type="button" class="btn-borrar">Sí, eliminar</button>
+      </div>
+    </dialog>
     <script type="module" src="main.js"></script>
   </body>
 </html>
